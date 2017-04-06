@@ -8,6 +8,7 @@
 #include "ObjectMgr.h"
 #include "PlayerBotAI.h"
 #include "AdvancedPlayerBotAI.h"
+#include <array>
 
 /*
  * Elemental Invasion
@@ -117,25 +118,23 @@ enum
     EVENT_NIGHTMARE = 66,       // spawn of all 4 Dragons of Nightmare
 };
 
-static uint32 NightmareDragons[] =
+static const std::array<uint32, 4> NightmareDragons
 {
     NPC_YSONDRE, NPC_LETHON, NPC_EMERISS, NPC_TAERAR
 };
+
 
 struct DragonsOfNightmare : WorldEvent
 {
     DragonsOfNightmare() : WorldEvent(EVENT_NIGHTMARE) {}
 
     void Update() override;
-    void Enable() override;
-    void Disable() override;
 
     static void CheckSingleVariable(uint32 idx, uint32& value);
 
 private:    
-    void CheckNightmareDragonsVariables(uint32 &aliveCount, uint32 &reqUpdate, uint32 &respawnTimer);
     void UpdateRespawnTimeForDeadDragons(std::vector<ObjectGuid> &dragons, time_t respawnTime);
-    bool LoadDragons(std::vector<ObjectGuid> &dragons);
+    std::vector<ObjectGuid> LoadDragons();
     void PermutateDragons();
 };
 

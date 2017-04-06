@@ -54,7 +54,11 @@ void boss_dragon_of_nightmareAI::JustDied(Unit* pKiller)
     --varAliveCount;
     sObjectMgr.SetSavedVariable(VAR_ALIVE_COUNT, varAliveCount, true);
 
-    if (varAliveCount) return;
+    // still at least one dragon still alive, don't do anything yet
+    if (varAliveCount)
+    {
+        return;
+    }
 
     sObjectMgr.SetSavedVariable(VAR_REQ_UPDATE, DEF_STOP_DELAY, true);
     sObjectMgr.SetSavedVariable(VAR_RESP_TIME, time(nullptr) + urand(4 * 24 * 3600, 7 * 24 * 3600), true);
@@ -241,12 +245,6 @@ GameObjectAI* GetAI_go_putrid_shroom(GameObject* pGo)
 
 CreatureAI* GetAI_boss_dragon_of_nightmare(Creature* pCreature)
 {
-    auto permVar = GetDrakeVar(pCreature->GetObjectGuid().GetCounter());
-    auto permEntry = sObjectMgr.GetSavedVariable(permVar, 0);
-
-    if (permEntry && permEntry != pCreature->GetEntry())
-        pCreature->UpdateEntry(permEntry);
-
     switch (pCreature->GetEntry())
     {
     case NPC_EMERISS:
