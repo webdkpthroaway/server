@@ -49,19 +49,19 @@ void boss_dragon_of_nightmareAI::EnterEvadeMode()
 
 void boss_dragon_of_nightmareAI::JustDied(Unit* pKiller)
 {
-    uint32 varAliveCount = DEF_ALIVE_COUNT;
-    DragonsOfNightmare::CheckSingleVariable(VAR_ALIVE_COUNT, varAliveCount);
-    --varAliveCount;
-    sObjectMgr.SetSavedVariable(VAR_ALIVE_COUNT, varAliveCount, true);
+    //uint32 varAliveCount = DEF_ALIVE_COUNT;
+    //DragonsOfNightmare::CheckSingleVariable(VAR_ALIVE_COUNT, varAliveCount);
+    //--varAliveCount;
+    //sObjectMgr.SetSavedVariable(VAR_ALIVE_COUNT, varAliveCount, true);
 
-    // still at least one dragon still alive, don't do anything yet
-    if (varAliveCount)
-    {
-        return;
-    }
+    //// still at least one dragon still alive, don't do anything yet
+    //if (varAliveCount)
+    //{
+    //    return;
+    //}
 
-    sObjectMgr.SetSavedVariable(VAR_REQ_UPDATE, DEF_STOP_DELAY, true);
-    sObjectMgr.SetSavedVariable(VAR_RESP_TIME, time(nullptr) + urand(4 * 24 * 3600, 7 * 24 * 3600), true);
+    //sObjectMgr.SetSavedVariable(VAR_REQ_UPDATE, DEF_STOP_DELAY, true);
+    //sObjectMgr.SetSavedVariable(VAR_RESP_TIME, time(nullptr) + urand(4 * 24 * 3600, 7 * 24 * 3600), true);
 
     ScriptedAI::JustDied(pKiller);
 }

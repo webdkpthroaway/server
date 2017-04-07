@@ -9,6 +9,8 @@
 #include "CinematicStuff.h"
 #include "MapManager.h"
 
+#include "Events/NightmareDragons.h"
+
 /*
  * Elemental Invasion
  */
@@ -245,166 +247,10 @@ MoonbrookEventState Moonbrook::GetMoonbrookState()
     return MOONBROOK_EVENT_NONE;    
 }
 
-/*
-* Dragons of Nightmare
-*/
-
-void DragonsOfNightmare::Update()
-{
-    uint32 aliveCount = DEF_ALIVE_COUNT;
-    uint32 reqUpdate = DEF_REQ_UPDATE;
-    uint32 respawnTimer = time(nullptr) + urand(4 * 24 * 3600, 7 * 24 * 3600);
-
-    CheckSingleVariable(VAR_ALIVE_COUNT, aliveCount);
-    CheckSingleVariable(VAR_REQ_UPDATE, reqUpdate);
-    CheckSingleVariable(VAR_RESP_TIME, respawnTimer);
-
-    auto guids = LoadDragons();
-
-    if (guids.size() != NightmareDragons.size())
-    {
-        sLog.outError("GameEventMgr: [Dragons of Nightmare] Unable to find GUIDs for all dragons! Aborting!");
-        return;
-    }
-
-    // if at least one is alive and at least one is dead
-    // update the respawn timer of dead dragons by some big value
-    // thus we are just waiting for all dragons to die
-    if (aliveCount && aliveCount < NightmareDragons.size())
-        UpdateRespawnTimeForDeadDragons(guids, 9999999999);
-
-    if (!reqUpdate)
-    {
-        if (!sGameEventMgr.IsActiveEvent(m_eventId))
-        {
-            if (respawnTimer < time(nullptr))
-            {
-                if (!aliveCount)
-                {
-                    aliveCount = DEF_ALIVE_COUNT;
-                    sObjectMgr.SetSavedVariable(VAR_ALIVE_COUNT, DEF_ALIVE_COUNT, true);
-                }
-
-                PermutateDragons();
-                BASIC_LOG("GameEventMgr: [Dragons of Nightmare] %u of 4 alive.", aliveCount);
-                sGameEventMgr.StartEvent(m_eventId, true);
-            }
-        }
-
-        return;
-    }
-
-    // allow some time before event stop so the players could loot the body
-    if (reqUpdate > 1)
-    {
-        --reqUpdate;
-        sObjectMgr.SetSavedVariable(VAR_REQ_UPDATE, reqUpdate, true);
-        return;
-    }
-
-    // stop the event, update all timers
-    if (sGameEventMgr.IsActiveEvent(m_eventId))
-    {
-        UpdateRespawnTimeForDeadDragons(guids, respawnTimer);
-        sObjectMgr.SetSavedVariable(VAR_REQ_UPDATE, 0, true);
-        sObjectMgr.SetSavedVariable(VAR_REQ_PERM, 1, true);
-        BASIC_LOG("GameEventMgr: [Dragons of Nightmare] last dragon just died.", aliveCount);
-        sGameEventMgr.StopEvent(m_eventId, true);
-    }
-}
-
-void DragonsOfNightmare::CheckSingleVariable(uint32 idx, uint32& value)
-{
-    bool variableExists = false;
-    auto variableToCheck = sObjectMgr.GetSavedVariable(idx, value, &variableExists);
-
-    if (!variableExists)
-    {
-        sLog.outError("GameEventMgr: [Dragons of Nightmare] variable does not exist! Setting default.");
-        sObjectMgr.SetSavedVariable(idx, value, true);
-    }
-    else
-    {
-        value = variableToCheck;
-    }
-}
-
-void DragonsOfNightmare::UpdateRespawnTimeForDeadDragons(std::vector<ObjectGuid> &dragons, time_t respawnTime)
-{
-    for (auto& guid : dragons)
-    {
-        auto cData = sObjectMgr.GetCreatureData(guid.GetCounter());
-
-        if (!cData)
-        {
-            sLog.outError("GameEventMgr: [Dragons of Nightmare] creature data %u not found!", guid.GetCounter());
-            continue;
-        }
-
-        auto instanceId = sMapMgr.GetContinentInstanceId(cData->mapid, cData->posX, cData->posY);
-
-        // get the map that currently creature belongs to
-        auto map = sMapMgr.FindMap(cData->mapid, instanceId);
-
-        if (!map)
-        {
-            sLog.outError("GameEventMgr: [Dragons of Nightmare] instance %u of map %u not found!", instanceId, cData->mapid);
-            continue;
-        }
-
-        auto pCreature = map->GetCreature(guid);
-
-        if (!pCreature)
-        {
-            sLog.outError("GameEventMgr: [Dragons of Nightmare] creature %u not found!", guid.GetCounter());
-            continue;
-        }
-
-        if (pCreature->isDead())
-            map->GetPersistentState()->SaveCreatureRespawnTime(guid.GetCounter(), respawnTime);
-    }
-}
-
-std::vector<ObjectGuid> DragonsOfNightmare::LoadDragons()
-{
-    std::vector<ObjectGuid> guids;
-
-    for (auto& dragonID : NightmareDragons)
-    {
-        auto dCreatureGuid = sObjectMgr.GetOneCreatureByEntry(dragonID);
-
-        if (dCreatureGuid.IsEmpty())
-        {
-            sLog.outError("GameEventMgr: [Dragons of Nightmare] creature %u not found in world!", dragonID);
-            break;
-        }
-
-        guids.push_back(dCreatureGuid);
-    }
-
-    return guids;
-}
-
-void DragonsOfNightmare::PermutateDragons()
-{
-    auto reqPerm = sObjectMgr.GetSavedVariable(VAR_REQ_PERM, 0);
-
-    if (!reqPerm) return;
-
-    std::vector<uint32> permutation = { NPC_LETHON, NPC_EMERISS, NPC_YSONDRE, NPC_TAERAR };
-    std::random_shuffle(permutation.begin(), permutation.end());
-
-    sObjectMgr.SetSavedVariable(VAR_PERM_1, permutation[0]);
-    sObjectMgr.SetSavedVariable(VAR_PERM_2, permutation[1]);
-    sObjectMgr.SetSavedVariable(VAR_PERM_3, permutation[2]);
-    sObjectMgr.SetSavedVariable(VAR_PERM_4, permutation[3]);
-
-    sObjectMgr.SetSavedVariable(VAR_REQ_PERM, 0);
-}
 
 /*
-* Darkmoon Faire
-*/
+ * Darkmoon Faire
+ */
 
 void DarkmoonFaire::Update()
 {
@@ -651,19 +497,12 @@ void BattlePlayerAI::OnPlayerLogin()
 }
 
 
-/*
-*
-*/
-
-void GameEventMgr::LoadHardcodedEvents(HardcodedEventList& eventList)
+ScriptedEventList GameEventMgr::LoadHardcodedEvents()
 {
-    auto invasion = new ElementalInvasion();
-    auto leprithus = new Leprithus();
-    auto moonbrook = new Moonbrook();
-    auto nightmare = new DragonsOfNightmare();
-    auto darkmoon = new DarkmoonFaire();
-    auto lunarfw = new LunarFestivalFirework();
-    auto silithusWarEffortBattle = new SilithusWarEffortBattle();
+    ScriptedEventList events {
 
-    eventList = { invasion, leprithus, moonbrook, nightmare, darkmoon, lunarfw, silithusWarEffortBattle };
+   
+    };
+
+    return events;
 }

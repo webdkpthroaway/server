@@ -375,20 +375,20 @@ CREATE TABLE `variables` (
   PRIMARY KEY  (`index`)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 */
-uint32 ObjectMgr::GetSavedVariable(uint32 index, uint32 defaultValue, bool *exist)
+/*std::optional<*/uint32/*>*/ ObjectMgr::GetSavedVariable(uint32 index, uint32 defaultValue, bool& exist) // todo, check compiler support on servers
 {
-    SavedVariablesVector::iterator it;
-    for (it = m_SavedVariables.begin(); it != m_SavedVariables.end(); ++it)
+    exist = false;
+
+    for (auto& variable : m_SavedVariables)
     {
-        if (it->uiIndex == index)
+        if (variable.uiIndex == index)
         {
-            if (exist)
-                (*exist) = true;
-            return it->uiValue;
+            exist = true;
+            return variable.uiValue;
         }
     }
-    if (exist)
-        (*exist) = false;
+
+    sLog.outError("ObjectMgr: Variable %u does not exist! Returning default.", index);
     return defaultValue;
 }
 

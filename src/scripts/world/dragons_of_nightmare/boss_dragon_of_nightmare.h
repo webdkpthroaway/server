@@ -21,8 +21,6 @@ enum
     SPELL_DREAM_FOG_AURA            = 24777
 };
 
-uint32 GetDrakeVar(uint32 guid);
-
 struct boss_dragon_of_nightmareAI : ScriptedAI
 {
     explicit boss_dragon_of_nightmareAI(Creature* pCreature);

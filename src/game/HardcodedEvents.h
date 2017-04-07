@@ -1,7 +1,3 @@
-/*
- *
- */
-
 #pragma once
 
 #include "GameEventMgr.h"
@@ -107,35 +103,6 @@ struct Moonbrook : WorldEvent
 
 private:
     MoonbrookEventState GetMoonbrookState();
-};
-
-/*
- * Dragons of Nightmare
- */
-
-enum
-{
-    EVENT_NIGHTMARE = 66,       // spawn of all 4 Dragons of Nightmare
-};
-
-static const std::array<uint32, 4> NightmareDragons
-{
-    NPC_YSONDRE, NPC_LETHON, NPC_EMERISS, NPC_TAERAR
-};
-
-
-struct DragonsOfNightmare : WorldEvent
-{
-    DragonsOfNightmare() : WorldEvent(EVENT_NIGHTMARE) {}
-
-    void Update() override;
-
-    static void CheckSingleVariable(uint32 idx, uint32& value);
-
-private:    
-    void UpdateRespawnTimeForDeadDragons(std::vector<ObjectGuid> &dragons, time_t respawnTime);
-    std::vector<ObjectGuid> LoadDragons();
-    void PermutateDragons();
 };
 
 /*

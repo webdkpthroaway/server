@@ -27,6 +27,8 @@
 #include "Platform/Define.h"
 #include "Policies/Singleton.h"
 
+#include "Events/WorldEvent.h"
+
 #define max_ge_check_delay 86400                            // 1 day in seconds
 
 class Creature;
@@ -78,20 +80,8 @@ struct GameEventMail
     uint32 senderEntry;
 };
 
-struct WorldEvent
-{
-    explicit WorldEvent(uint16 eventId) : m_eventId(eventId) {}
-    virtual ~WorldEvent() {}
-
-    uint16 m_eventId;
-
-    virtual void Update() {}
-    virtual void Enable() {}
-    virtual void Disable() {}
-};
-
 typedef std::pair<uint32, GameEventCreatureData> GameEventCreatureDataPair;
-typedef std::list<WorldEvent*> HardcodedEventList;
+typedef std::vector<std::unique_ptr<WorldEvent>> ScriptedEventList;
 
 class GameEventMgr
 {
@@ -124,8 +114,8 @@ class GameEventMgr
         int16 GetGameEventId(uint32 guid_or_poolid);
 
         GameEventCreatureData const* GetCreatureUpdateDataForActiveEvent(uint32 lowguid) const;       
-        HardcodedEventList mGameEventHardcodedList;
-        void LoadHardcodedEvents(HardcodedEventList& eventList);
+        ScriptedEventList mGameEventHardcodedList;
+        ScriptedEventList LoadHardcodedEvents();
     private:
         bool m_IsSilithusEventCompleted;
         void ApplyNewEvent(uint16 event_id, bool resume);

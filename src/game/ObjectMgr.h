@@ -480,14 +480,20 @@ enum PermVariables
     VAR_PERM_3      = 30006,
     VAR_PERM_4      = 30007,
 
+    // todo, remove old vars
+    LETHON_ALIVE    = 30008,
+    YSONDRE_ALIVE   = 30009,
+    EMERISS_ALIVE   = 30010,
+    TAERAR_ALIVE    = 30011,
+
+    LETHON_LOC_INDEX  = 30012,
+    YSONDRE_LOC_INDEX = 30013,
+    EMERISS_LOC_INDEX = 30014,
+    TAERAR_LOC_INDEX  = 30015,
+
     DEF_ALIVE_COUNT = 4,        // default alive dragons count for VAR_ALIVE_COUNT
     DEF_REQ_UPDATE  = 0,        // default update requirement for VAR_REQ_UPDATE
     DEF_STOP_DELAY  = 5,        // default times event check will not stop the event
-
-    NPC_YSONDRE     = 14887,
-    NPC_LETHON      = 14888, 
-    NPC_EMERISS     = 14889,  
-    NPC_TAERAR      = 14890,
 
     GUID_YSONDRE    = 52350,
     GUID_LETHON     = 52359,
@@ -1138,7 +1144,7 @@ class ObjectMgr
         void _SaveVariable(const SavedVariable& toSave);
 
         void InitSavedVariable(uint32 index, uint32 value);
-        uint32 GetSavedVariable(uint32 index, uint32 defaultValue = 0, bool *exist = nullptr);
+        uint32 GetSavedVariable(uint32 index, uint32 defaultValue, bool& exist); // todo - remove exist and default
         void SetSavedVariable(uint32 index, uint32 value, bool SaveToDb = false);
         void LoadVariable(uint32 index, uint32* variable, uint32 defaultValue, uint32 maxValue=0, uint32 minValue=0);
 

@@ -85,7 +85,11 @@ void GameEventMgr::StartEvent(uint16 event_id, bool overwrite /*=false*/, bool r
     //invoke enable on hardcoded events
     if (mGameEvent[event_id].hardcoded && !mGameEvent[event_id].disabled)
     {
-        auto it = std::find_if(mGameEventHardcodedList.begin(), mGameEventHardcodedList.end(), [&](const WorldEvent* w) { return event_id == w->m_eventId; });
+        auto it = std::find_if(mGameEventHardcodedList.begin(), mGameEventHardcodedList.end(), [&](auto event)
+        {
+            return event->m_eventId == event_id;
+        });
+
         if (mGameEventHardcodedList.end() != it)
         {
             (*it)->Enable();
@@ -140,7 +144,10 @@ void GameEventMgr::EnableEvent(uint16 event_id, bool enable)
         return;
 
     // disabled event should be stopped also, thus we do it here both for regular and hardcoded events
-    auto it = std::find_if(mGameEventHardcodedList.begin(), mGameEventHardcodedList.end(), [&](const WorldEvent* w) { return event_id == w->m_eventId; });
+    auto it = std::find_if(mGameEventHardcodedList.begin(), mGameEventHardcodedList.end(), [&](auto event)
+    {
+        return event->m_eventId == event_id;
+    });
 
     if (mGameEventHardcodedList.end() != it)
     {
@@ -239,7 +246,7 @@ void GameEventMgr::LoadFromDB()
     }
 
     // initialize hardcoded events
-    LoadHardcodedEvents(mGameEventHardcodedList);
+    mGameEventHardcodedList = LoadHardcodedEvents();
 
     std::map<uint16, int16> pool2event;                     // for check unique spawn event associated with pool
     std::map<uint32, int16> creature2event;                 // for check unique spawn event associated with creature
@@ -674,57 +681,71 @@ void GameEventMgr::Initialize(MapPersistentState* state)
 {
     // At map persistent state creating need only apply pool spawn modifications
     // other data is global and will be auto-apply
-    for (auto event_itr = m_ActiveEvents.begin(); event_itr != m_ActiveEvents.end(); ++event_itr)
-        for (auto pool_itr = mGameEventSpawnPoolIds[*event_itr].begin(); pool_itr != mGameEventSpawnPoolIds[*event_itr].end(); ++pool_itr)
-            sPoolMgr.InitSpawnPool(*state, *pool_itr);
+    for (auto& event : m_ActiveEvents)
+    {
+        for (auto& pool : mGameEventSpawnPoolIds[event])
+        {
+            sPoolMgr.InitSpawnPool(*state, pool);
+        }
+    }
 }
 
 // return the next event delay in ms
 uint32 GameEventMgr::Update(ActiveEvents const* activeAtShutdown /*= NULL*/)
 {
     // process hardcoded events
-    for (auto hEvent_iter = mGameEventHardcodedList.begin(); hEvent_iter != mGameEventHardcodedList.end(); ++hEvent_iter)
-        if (!mGameEvent[(*hEvent_iter)->m_eventId].disabled)
-            (*hEvent_iter)->Update();
+    for (auto& event : mGameEventHardcodedList)
+    {
+        if (!mGameEvent[(event)->m_eventId].disabled)
+        {
+            event->Update();
+        }
+    }
 
     time_t currenttime = time(nullptr);
-    uint32 nextEventDelay = max_ge_check_delay;             // 1 day
+    uint32 nextEventDelay = max_ge_check_delay;
 
-    for (uint16 itr = 1; itr < mGameEvent.size(); ++itr)
+    for (auto& event : mGameEvent)
     {
         // ignore hardcoded and disabled events
-        if (mGameEvent[itr].hardcoded || mGameEvent[itr].disabled) continue;
+        if (event.hardcoded || event.disabled)
+        {
+            continue;
+        }
 
         //sLog.outErrorDb("Checking event %u",itr);
-        if (CheckOneGameEvent(itr, currenttime))
+        if (CheckOneGameEvent(event.holiday_id, currenttime)) // NOTE: PROBABLY WRONG, CHECK OLD CODE
         {
             //DEBUG_LOG("GameEvent %u is active",itr->first);
-            if (!IsActiveEvent(itr))
+            if (!IsActiveEvent(event.holiday_id))
             {
-                bool resume = activeAtShutdown && activeAtShutdown->find(itr) != activeAtShutdown->end();
-                StartEvent(itr, false, resume);
+                bool resume = activeAtShutdown && activeAtShutdown->find(event.holiday_id) != activeAtShutdown->end();
+                StartEvent(event.holiday_id, false, resume);
             }
         }
         else
         {
             //DEBUG_LOG("GameEvent %u is not active",itr->first);
-            if (IsActiveEvent(itr))
-                StopEvent(itr);
+            if (IsActiveEvent(event.holiday_id))
+                StopEvent(event.holiday_id);
             else
             {
                 if (!m_IsGameEventsInit)
                 {
-                    // spawn all negative ones for this event
-                    GameEventSpawn(-itr);
+                    // spawn all negative ones for this event - NOTE: CHECK
+                    GameEventSpawn(-event.holiday_id); // ????
                 }
             }
         }
 
-        uint32 calcDelay = NextCheck(itr);
-        if (calcDelay < nextEventDelay)
-            nextEventDelay = calcDelay;
-    }
+        uint32 calcDelay = NextCheck(event.holiday_id);
 
+        if (calcDelay < nextEventDelay)
+        {
+            nextEventDelay = calcDelay;
+        }
+    }
+        
     BASIC_LOG("Next game event check in %u seconds.", nextEventDelay + 1);
 
     return (nextEventDelay + 1) * IN_MILLISECONDS;           // Add 1 second to be sure event has started/stopped at next call
@@ -1109,13 +1130,13 @@ void GameEventMgr::UpdateSilithusPVP()
     uint32 TodayOfMonth = timeinfo->tm_mday;
 
     /** Event start every 6hours for 2hours */
-    uint32 occurency = 6;
-    if (timeinfo->tm_hour % occurency == 0 && timeinfo->tm_min == 0)
+    uint32 frequency = 6;
+    if (timeinfo->tm_hour % frequency == 0 && timeinfo->tm_min == 0)
     {
         SetSilithusPVPEventCompleted(false);
         event = SILITHUS_PVP_EVENT_ON;
     }
-    else if ((timeinfo->tm_hour % occurency == 0 || timeinfo->tm_hour % occurency == 1) && !GetSilithusPVPEventCompleted())
+    else if ((timeinfo->tm_hour % frequency == 0 || timeinfo->tm_hour % frequency == 1) && !GetSilithusPVPEventCompleted())
         event = SILITHUS_PVP_EVENT_ON;
     else
     {
