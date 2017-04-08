@@ -31,7 +31,8 @@ enum EObjectFields
     OBJECT_FIELD_ENTRY                         = 0x03, // Size:1
     OBJECT_FIELD_SCALE_X                       = 0x04, // Size:1
     OBJECT_FIELD_PADDING                       = 0x05, // Size:1
-    OBJECT_END                                 = 0x06,
+    OBJECT_VIS_MODIFIER                        = 0x06, // Size:4
+    OBJECT_END                                 = 0x0A
 };
 
 enum EItemFields

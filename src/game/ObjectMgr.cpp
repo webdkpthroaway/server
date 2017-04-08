@@ -1576,8 +1576,8 @@ void ObjectMgr::LoadGameobjects(bool reload)
     QueryResult *result = WorldDatabase.Query("SELECT gameobject.guid, gameobject.id, map, position_x, position_y, position_z, orientation,"
                           //   7          8          9          10         11             12            13     14
                           "rotation0, rotation1, rotation2, rotation3, spawntimesecs, animprogress, state, event, "
-                          //   15                          16                                   17
-                          "pool_gameobject.pool_entry, pool_gameobject_template.pool_entry, spawnFlags "
+                          //   15                          16                                   17        18
+                          "pool_gameobject.pool_entry, pool_gameobject_template.pool_entry, spawnFlags, visMod "
                           "FROM gameobject "
                           "LEFT OUTER JOIN game_event_gameobject ON gameobject.guid = game_event_gameobject.guid "
                           "LEFT OUTER JOIN pool_gameobject ON gameobject.guid = pool_gameobject.guid "
@@ -1633,6 +1633,7 @@ void ObjectMgr::LoadGameobjects(bool reload)
         data.rotation3      = fields[10].GetFloat();
         data.spawntimesecs  = fields[11].GetInt32();
         data.spawnFlags     = fields[17].GetUInt32();
+        data.vismod         = fields[18].GetUInt32();
         data.instanciatedContinentInstanceId = sMapMgr.GetContinentInstanceId(data.mapid, data.posX, data.posY);
 
         MapEntry const* mapEntry = sMapStorage.LookupEntry<MapEntry>(data.mapid);

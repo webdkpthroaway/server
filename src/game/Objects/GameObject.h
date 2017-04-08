@@ -508,6 +508,7 @@ struct GameObjectData
     float rotation1;
     float rotation2;
     float rotation3;
+    float vismod;
     int32  spawntimesecs;
     uint32 animprogress;
     GOState go_state;
@@ -550,7 +551,7 @@ class MANGOS_DLL_SPEC GameObject : public WorldObject
         void AddToWorld();
         void RemoveFromWorld();
 
-        bool Create(uint32 guidlow, uint32 name_id, Map *map, float x, float y, float z, float ang, float rotation0, float rotation1, float rotation2, float rotation3, uint32 animprogress, GOState go_state);
+        bool Create(uint32 guidlow, uint32 name_id, Map *map, float x, float y, float z, float ang, float rotation0, float rotation1, float rotation2, float rotation3, float vis_mod, uint32 animprogress, GOState go_state);
         void Update(uint32 update_diff, uint32 p_time) override;
         GameObjectInfo const* GetGOInfo() const;
 

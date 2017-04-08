@@ -42,6 +42,7 @@
 #define DEFAULT_VISIBILITY_BG       180.0f      // default visible distance in BG, 180 yards
 
 #define DEFAULT_WORLD_OBJECT_SIZE   0.388999998569489f      // currently used (correctly?) for any non Unit world objects. This is actually the bounding_radius, like player/creature from creature_model_data
+#define DEFAULT_OBJECT_VIS_MODIFIER 0.0f                    // write a comment if I finish this
 #define DEFAULT_OBJECT_SCALE        1.0f                    // player/item scale as default, npc/go from database, pets from dbc
 #define DEFAULT_TAUREN_MALE_SCALE   1.35f                   // Tauren Male Player Scale by default
 #define DEFAULT_TAUREN_FEMALE_SCALE 1.25f                   // Tauren Female Player Scale by default
@@ -326,6 +327,16 @@ class MANGOS_DLL_SPEC Object
 
         uint32 GetEntry() const { return GetUInt32Value(OBJECT_FIELD_ENTRY); }
         void SetEntry(uint32 entry) { SetUInt32Value(OBJECT_FIELD_ENTRY, entry); }
+
+        float GetVisibilityMod() const
+        {
+            m_floatValues[OBJECT_VIS_MODIFIER] ? m_floatValues[OBJECT_VIS_MODIFIER] : DEFAULT_OBJECT_VIS_MODIFIER;
+        }
+
+        void SetVisibilityMod(float vis_mod)
+        {
+            m_floatValues[OBJECT_VIS_MODIFIER] = vis_mod;
+        }
 
         float GetObjectScale() const
         {

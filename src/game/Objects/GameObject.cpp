@@ -133,7 +133,7 @@ void GameObject::RemoveFromWorld()
     Object::RemoveFromWorld();
 }
 
-bool GameObject::Create(uint32 guidlow, uint32 name_id, Map *map, float x, float y, float z, float ang, float rotation0, float rotation1, float rotation2, float rotation3, uint32 animprogress, GOState go_state)
+bool GameObject::Create(uint32 guidlow, uint32 name_id, Map *map, float x, float y, float z, float ang, float rotation0, float rotation1, float rotation2, float rotation3, float vis_mod, uint32 animprogress, GOState go_state)
 {
     MANGOS_ASSERT(map);
     Relocate(x, y, z, ang);
@@ -184,6 +184,7 @@ bool GameObject::Create(uint32 guidlow, uint32 name_id, Map *map, float x, float
 
     SetEntry(goinfo->id);
     SetDisplayId(goinfo->displayId);
+    SetVisibilityMod(vis_mod);
 
     SetGoState(go_state);
     SetGoType(GameobjectTypes(goinfo->type));

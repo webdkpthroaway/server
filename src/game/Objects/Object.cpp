@@ -1880,7 +1880,7 @@ void WorldObject::SendObjectMessageToSet(WorldPacket *data, bool self, WorldObje
 
     ObjectViewersDeliverer post_man(this, data, except);
     TypeContainerVisitor<ObjectViewersDeliverer, WorldTypeMapContainer> message(post_man);
-    cell.Visit(p, message, *GetMap(), *this, GetMap()->GetVisibilityDistance());
+    cell.Visit(p, message, *GetMap(), *this, GetMap()->GetVisibilityDistance() + GetVisibilityMod());
 }
 
 void WorldObject::SendMovementMessageToSet(WorldPacket data, bool self, WorldObject* except)
@@ -1909,7 +1909,7 @@ void WorldObject::SendMessageToSetExcept(WorldPacket *data, Player const* skippe
     if (IsInWorld())
     {
         MaNGOS::MessageDelivererExcept notifier(data, skipped_receiver);
-        Cell::VisitWorldObjects(this, notifier, GetMap()->GetVisibilityDistance());
+        Cell::VisitWorldObjects(this, notifier, GetMap()->GetVisibilityDistance() + GetVisibilityMod());
     }
 }
 
@@ -2049,7 +2049,7 @@ GameObject* WorldObject::SummonGameObject(uint32 entry, float x, float y, float 
     }
     Map *map = GetMap();
     GameObject *go = new GameObject();
-    if (!go->Create(map->GenerateLocalLowGuid(HIGHGUID_GAMEOBJECT), entry, map, x, y, z, ang, rotation0, rotation1, rotation2, rotation3, 100, GO_STATE_READY))
+    if (!go->Create(map->GenerateLocalLowGuid(HIGHGUID_GAMEOBJECT), entry, map, x, y, z, ang, rotation0, rotation1, rotation2, rotation3, 0.0, 100, GO_STATE_READY))
     {
         delete go;
         return nullptr;
