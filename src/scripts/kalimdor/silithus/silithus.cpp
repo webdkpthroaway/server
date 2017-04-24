@@ -1177,177 +1177,6 @@ CreatureAI* GetAI_npc_resonating_Crystal(Creature* pCreature)
     return new npc_resonating_CrystalAI(pCreature);
 }
 
-enum
-{
-    MAX_QIRAJI_CRYSTALS     = 6,
-    VAR_CRYSTALS_AWARDED    = 1,
-
-    QUEST_BANG_A_GONG       = 8743,
-
-};
-
-enum
-{
-    GLOBAL_TEXT_CHAMPION    = -1000007,
-    GLOBAL_TEXT_CRYSTALS    = -1000008,
-
-    TEXT_COLOSSUS_ASHI      = -1000009,
-    TEXT_COLOSSUS_REGAL     = -1000016,
-    TEXT_COLOSSUS_ZORA      = -1000017,
-
-    GAME_EVENT_AQ_WAR       = 61,
-    GAME_EVENT_ASHI         = 62,
-    GAME_EVENT_REGAL        = 63,
-    GAME_EVENT_ZORA         = 64,
-    GAME_EVENT_CRYSTALS     = 65,
-
-    GO_AQ_BARRIER           = 176146,
-    GO_AQ_GATE_ROOTS        = 176147,
-    GO_AQ_GATE_RUNES        = 176148,
-    GO_AQ_GHOST_GATE        = 180322,
-
-    STAGE_OPEN_GATES        = 0,
-};
-
-struct scarab_gongAI: public GameObjectAI
-{
-    scarab_gongAI(GameObject* go) : GameObjectAI(go)
-    {
-        eventTimer = 0;
-        eventStep = 0;
-        eventStage = STAGE_OPEN_GATES;
-    }
-
-    uint32 eventTimer;
-    uint32 eventStep;
-    uint32 eventStage;
-
-    GameObject* go_aq_barrier;
-    GameObject* go_aq_gate_runes;
-    GameObject* go_aq_gate_roots;
-    // Invisible AQ barrier
-    GameObject* go_aq_ghost_gate;
-
-    void UpdateAI(const uint32 uiDiff)
-    {
-        if (eventTimer)
-        {
-            if (eventTimer <= uiDiff)
-            {
-                switch (eventStage)
-                {
-                    case STAGE_OPEN_GATES: return HandleOpeningStage();
-                }
-
-            }
-            else eventTimer -= uiDiff;
-        }
-
-    }
-
-    void HandleOpeningStage()
-    {
-        switch (eventStep)
-        {
-            case 0:
-                go_aq_gate_roots->SetGoState(GO_STATE_ACTIVE);
-                eventTimer = 3000;
-                break;
-
-            case 1:
-                go_aq_gate_runes->SetGoState(GO_STATE_ACTIVE);
-
-                sWorld.SendWorldText(GLOBAL_TEXT_CRYSTALS);
-                sGameEventMgr.StartEvent(GAME_EVENT_CRYSTALS, true);
-
-                eventTimer = 3000;
-                break;
-
-            case 2:
-                go_aq_barrier->SetGoState(GO_STATE_ACTIVE);
-
-                me->MonsterScriptToZone(TEXT_COLOSSUS_ASHI, CHAT_MSG_MONSTER_EMOTE);
-                me->MonsterScriptToZone(TEXT_COLOSSUS_REGAL, CHAT_MSG_MONSTER_EMOTE);
-                me->MonsterScriptToZone(TEXT_COLOSSUS_ZORA, CHAT_MSG_MONSTER_EMOTE);
-
-                eventTimer = 8000;
-                break;
-
-
-            eventStep++;
-        }
-
-    }
-
-
-    void BeginAQOpeningEvent(Player* player)
-    {
-        if (!player)
-            return;
-
-        go_aq_barrier    = GetClosestGameObjectWithEntry(me, GO_AQ_BARRIER, 150);
-        go_aq_gate_runes = GetClosestGameObjectWithEntry(me, GO_AQ_GATE_RUNES, 150);
-        go_aq_gate_roots = GetClosestGameObjectWithEntry(me, GO_AQ_GATE_ROOTS, 150);
-        go_aq_ghost_gate = GetClosestGameObjectWithEntry(me, GO_AQ_GHOST_GATE, 150);
-
-        if (!go_aq_barrier || !go_aq_gate_runes || !go_aq_gate_roots || !go_aq_ghost_gate)
-            return;
-
-        // Should not be open
-        if (go_aq_barrier->GetGoState() == GO_STATE_ACTIVE)
-            return;
-
-        // Announce Champion to the world
-        sWorld.SendWorldText(GLOBAL_TEXT_CHAMPION, player->GetName());
-
-        eventTimer = 1000;
-    }
-};
-
-GameObjectAI* GetAIscarab_gong(GameObject *go)
-{
-    return new scarab_gongAI(go);
-}
-
-bool GOHello_scarab_gong(Player* player, GameObject* go)
-{
-    if (go->GetGoType() != GAMEOBJECT_TYPE_QUESTGIVER)
-        return false;
-
-    uint32 crystalsAwarded = sObjectMgr.GetSavedVariable(VAR_CRYSTALS_AWARDED, MAX_QIRAJI_CRYSTALS);
-
-    if (crystalsAwarded >= MAX_QIRAJI_CRYSTALS)
-        return false;
-
-    player->PrepareQuestMenu(go->GetGUID());
-    player->SendPreparedQuest(go->GetGUID());
-
-    return true;
-}
-
-bool QuestRewarded_scarab_gong(Player* player, GameObject* go, Quest const* quest)
-{
-    if (quest->GetQuestId() != QUEST_BANG_A_GONG)
-        return false;
-
-    uint32 crystalsAwarded = sObjectMgr.GetSavedVariable(VAR_CRYSTALS_AWARDED, MAX_QIRAJI_CRYSTALS);
-
-    // Just to be sure
-    if (crystalsAwarded >= MAX_QIRAJI_CRYSTALS)
-        return false;
-
-    // Increment number of black crystals given
-    sObjectMgr.SetSavedVariable(VAR_CRYSTALS_AWARDED, crystalsAwarded + 1, true);
-
-    // Special case for first to ring the Gong
-    if (0 == crystalsAwarded)
-    {
-        if (scarab_gongAI* gongAI = dynamic_cast<scarab_gongAI*>(go->AI()))
-            gongAI->BeginAQOpeningEvent(player);
-    }
-
-    return true;
-}
 
 /*###
  ## npc_AQwar_effort
@@ -2584,10 +2413,16 @@ enum
     MAX_QIRAJI = 6,
     MAX_KALDOREI = 20,
 
+    GO_AQ_BARRIER           = 176146,
+    GO_AQ_GATE_ROOTS        = 176147,
+    GO_AQ_GATE_RUNES        = 176148,
+    GO_AQ_GHOST_GATE        = 180322,
+
     AQ_OPEN_IF_CLOSED = 0,
     AQ_PREPARE_CLOSE = 1,
     AQ_CLOSE = 2,
     AQ_RESET = 3,
+    AQ_CLOSE_QUIETLY = 4,
 
     SCENE_BLOCK_TIME = 15 * MINUTE * IN_MILLISECONDS,
 };
@@ -2694,11 +2529,11 @@ struct npc_anachronos_the_ancientAI : public ScriptedAI
         if (Creature* pCaelestrasz = m_creature->GetMap()->GetCreature(m_uiCaelestraszGUID))
             pCaelestrasz->ForcedDespawn();
 
-        if (Creature* pCaelestrasz = m_creature->GetMap()->GetCreature(m_uiCaelestraszGUID))
-            pCaelestrasz->ForcedDespawn();
+        if (Creature* pArygos = m_creature->GetMap()->GetCreature(m_uiArygosGUID))
+            pArygos->ForcedDespawn();
 
-        // Reset AQ doors to previous state
-        SetupAQGate(AQ_RESET);
+        // Close AQ gates quietly
+        SetupAQGate(AQ_CLOSE_QUIETLY);
 
         // Anachronos will go invisible, blocking new attempts to
         // start the scene until the time is up
@@ -2753,7 +2588,14 @@ struct npc_anachronos_the_ancientAI : public ScriptedAI
 
                 // Close gates with animation
                 go->ResetDoorOrButton();
-                go->UseDoorOrButton();
+                go->SetGoState(GO_STATE_READY);
+
+                break;
+
+            case AQ_CLOSE_QUIETLY:
+                go->SetVisible(false);
+                AnimateAQGate(go, AQ_CLOSE);
+                go->SetVisible(true);
 
                 break;
 
@@ -3440,6 +3282,234 @@ bool QuestAcceptGO_crystalline_tear(Player* pPlayer, GameObject* pGo, const Ques
 
     return false;
 }
+
+enum
+{
+    MAX_QIRAJI_CRYSTALS     = 6,
+    VAR_CRYSTALS_AWARDED    = 1,
+
+    QUEST_BANG_A_GONG       = 8743,
+
+    GLOBAL_TEXT_CHAMPION    = -1000007,
+    GLOBAL_TEXT_CRYSTALS    = -1000008,
+
+    TEXT_COLOSSUS_ASHI      = -1000009,
+    TEXT_COLOSSUS_REGAL     = -1000016,
+    TEXT_COLOSSUS_ZORA      = -1000017,
+
+    GAME_EVENT_AQ_WAR       = 61,
+    GAME_EVENT_ASHI         = 62,
+    GAME_EVENT_REGAL        = 63,
+    GAME_EVENT_ZORA         = 64,
+    GAME_EVENT_CRYSTALS     = 65,
+
+
+    STAGE_OPEN_GATES        = 0,
+    STAGE_WAR               = 1,
+    STAGE_RESET             = 2,
+};
+
+struct scarab_gongAI: public GameObjectAI
+{
+    scarab_gongAI(GameObject* go) : GameObjectAI(go)
+    {
+        eventTimer = 0;
+        eventStep = 0;
+        eventStage = STAGE_OPEN_GATES;
+    }
+
+    uint32 eventTimer;
+    uint32 eventStep;
+    uint32 eventStage;
+
+    GameObject* go_aq_barrier;
+    GameObject* go_aq_gate_runes;
+    GameObject* go_aq_gate_roots;
+    // Invisible AQ barrier
+    GameObject* go_aq_ghost_gate;
+
+    void UpdateAI(const uint32 uiDiff)
+    {
+        if (eventTimer)
+        {
+            if (eventTimer <= uiDiff)
+            {
+                switch (eventStage)
+                {
+                    case STAGE_OPEN_GATES: return HandleOpeningStage();
+                    case STAGE_WAR:         return HandleWarStage();
+                    case STAGE_RESET:      return ResetAQGates();
+                }
+
+            }
+            else eventTimer -= uiDiff;
+        }
+
+    }
+
+    void NextStage(uint32 timeUntil = 100)
+    {
+        eventStage++;
+        eventStep = 0;
+        eventTimer = timeUntil;
+    }
+
+    void HandleOpeningStage()
+    {
+        switch (eventStep)
+        {
+            case 0:
+                go_aq_gate_roots->ResetDoorOrButton();
+                go_aq_gate_roots->UseDoorOrButton();
+
+                // Remove invisible barrier
+                go_aq_ghost_gate->SetSpawnedByDefault(false);
+                go_aq_ghost_gate->Despawn();
+                go_aq_ghost_gate->SaveToDB();
+                eventTimer = 5000;
+                break;
+
+            case 1:
+                go_aq_gate_runes->ResetDoorOrButton();
+                go_aq_gate_runes->UseDoorOrButton();
+
+                eventTimer = 3000;
+                break;
+
+            case 2:
+                sWorld.SendWorldText(GLOBAL_TEXT_CRYSTALS);
+                eventTimer = 5000;
+
+                break;
+
+            case 3:
+                go_aq_barrier->ResetDoorOrButton();
+                go_aq_barrier->UseDoorOrButton();
+
+                me->MonsterScriptToZone(TEXT_COLOSSUS_ASHI, CHAT_MSG_MONSTER_EMOTE);
+                me->MonsterScriptToZone(TEXT_COLOSSUS_REGAL, CHAT_MSG_MONSTER_EMOTE);
+                me->MonsterScriptToZone(TEXT_COLOSSUS_ZORA, CHAT_MSG_MONSTER_EMOTE);
+
+                return NextStage(10000);
+
+        }
+
+        eventStep++;
+
+    }
+
+    void HandleWarStage()
+    {
+        switch (eventStep)
+        {
+            case 0:
+                sGameEventMgr.StartEvent(GAME_EVENT_CRYSTALS, true);
+
+                return EventDone();
+        }
+
+        eventStep++;
+    }
+
+
+    void BeginAQOpeningEvent(Player* player)
+    {
+        if (!player)
+            return;
+
+        go_aq_barrier    = GetClosestGameObjectWithEntry(me, GO_AQ_BARRIER, 150);
+        go_aq_gate_runes = GetClosestGameObjectWithEntry(me, GO_AQ_GATE_RUNES, 150);
+        go_aq_gate_roots = GetClosestGameObjectWithEntry(me, GO_AQ_GATE_ROOTS, 150);
+        go_aq_ghost_gate = GetClosestGameObjectWithEntry(me, GO_AQ_GHOST_GATE, 150);
+
+        if (!go_aq_barrier || !go_aq_gate_runes || !go_aq_gate_roots || !go_aq_ghost_gate)
+            return;
+
+        // Abort "Pawn on the Eternal Board" scene if currently active.
+        if (Creature* pAnachronos = GetClosestCreatureWithEntry(me, NPC_ANACHRONOS_THE_ANCIENT, 180.0f))
+        {
+            if (npc_anachronos_the_ancientAI* pAnachronosAI = dynamic_cast<npc_anachronos_the_ancientAI*>(pAnachronos->AI()))
+            {
+                pAnachronosAI->AbortScene();
+                eventTimer += 8000;
+            }
+        }
+
+        // Should not be open
+        if (go_aq_barrier->GetGoState() == GO_STATE_ACTIVE)
+            return;
+
+        // Announce Champion to the world
+        sWorld.SendWorldText(GLOBAL_TEXT_CHAMPION, player->GetName());
+
+        eventTimer += 1000;
+        eventStage = STAGE_OPEN_GATES;
+    }
+
+    void EventDone()
+    {
+        NextStage(0);
+        eventStage = STAGE_OPEN_GATES;
+    }
+
+    void ResetAQGates()
+    // For debugging
+    {
+        go_aq_ghost_gate->SetGoState(GO_STATE_READY);
+        go_aq_barrier->SetGoState(GO_STATE_READY);
+        go_aq_gate_runes->SetGoState(GO_STATE_READY);
+        go_aq_gate_roots->ResetDoorOrButton();
+        go_aq_gate_roots->SetGoState(GO_STATE_READY);
+
+        EventDone();
+    }
+};
+
+GameObjectAI* GetAIscarab_gong(GameObject *go)
+{
+    return new scarab_gongAI(go);
+}
+
+bool GOHello_scarab_gong(Player* player, GameObject* go)
+{
+    if (go->GetGoType() != GAMEOBJECT_TYPE_QUESTGIVER)
+        return false;
+
+    uint32 crystalsAwarded = sObjectMgr.GetSavedVariable(VAR_CRYSTALS_AWARDED, MAX_QIRAJI_CRYSTALS);
+
+    if (crystalsAwarded >= MAX_QIRAJI_CRYSTALS)
+        return false;
+
+    player->PrepareQuestMenu(go->GetGUID());
+    player->SendPreparedQuest(go->GetGUID());
+
+    return true;
+}
+
+bool QuestRewarded_scarab_gong(Player* player, GameObject* go, Quest const* quest)
+{
+    if (quest->GetQuestId() != QUEST_BANG_A_GONG)
+        return false;
+
+    uint32 crystalsAwarded = sObjectMgr.GetSavedVariable(VAR_CRYSTALS_AWARDED, MAX_QIRAJI_CRYSTALS);
+
+    // Just to be sure
+    if (crystalsAwarded >= MAX_QIRAJI_CRYSTALS)
+        return false;
+
+    // Increment number of black crystals given
+    sObjectMgr.SetSavedVariable(VAR_CRYSTALS_AWARDED, crystalsAwarded + 1, true);
+
+    // Special case for first to ring the Gong
+    if (0 == crystalsAwarded)
+    {
+        if (scarab_gongAI* gongAI = dynamic_cast<scarab_gongAI*>(go->AI()))
+            gongAI->BeginAQOpeningEvent(player);
+    }
+
+    return true;
+}
+
 
 
 /*########################
