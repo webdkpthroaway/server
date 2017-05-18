@@ -2337,6 +2337,7 @@ void Aura::HandleAuraTransform(bool apply, bool Real)
             else
             {
                 CreatureInfo const * ci = ObjectMgr::GetCreatureTemplate(m_modifier.m_miscvalue);
+
                 if (!ci)
                 {
                     model_id = 16358;                           // pig pink ^_^
@@ -2383,7 +2384,6 @@ void Aura::HandleAuraTransform(bool apply, bool Real)
             if (target->GetTypeId() == TYPEID_UNIT)
                 ((Creature*)target)->LoadEquipment(((Creature*)target)->GetCreatureInfo()->equipmentId, true);
 
-            CreatureInfo const * ci = ObjectMgr::GetCreatureTemplate(m_modifier.m_miscvalue);
             // re-apply some from still active with preference negative cases
             Unit::AuraList const& otherTransforms = target->GetAurasByType(SPELL_AURA_TRANSFORM);
             if (!otherTransforms.empty())
