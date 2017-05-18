@@ -2343,7 +2343,19 @@ void Aura::HandleAuraTransform(bool apply, bool Real)
                     sLog.outError("Auras: unknown creature id = %d (only need its modelid) Form Spell Aura Transform in Spell ID = %d", m_modifier.m_miscvalue, GetId());
                 }
                 else
+                {
                     model_id = Creature::ChooseDisplayId(ci);   // Will use the default model here
+
+                    /*
+                     * Prevent scale stacking from multiple procs but could be problematic
+                     * if the player changes their player display ID between two procs.
+                     * Works fine with shapeshifting effects. Ears open for a better solution.
+                     */
+                    if (target->GetDisplayId() != model_id)
+                    {
+                        mod_x = ci->scale;
+                    }
+                }
 
                 // creature case, need to update equipment
                 if (ci && target->GetTypeId() == TYPEID_UNIT)
@@ -2366,12 +2378,12 @@ void Aura::HandleAuraTransform(bool apply, bool Real)
         {
             target->setTransForm(0);
             target->SetDisplayId(target->GetNativeDisplayId());
-
+            
             // apply default equipment for creature case
             if (target->GetTypeId() == TYPEID_UNIT)
                 ((Creature*)target)->LoadEquipment(((Creature*)target)->GetCreatureInfo()->equipmentId, true);
 
-
+            CreatureInfo const * ci = ObjectMgr::GetCreatureTemplate(m_modifier.m_miscvalue);
             // re-apply some from still active with preference negative cases
             Unit::AuraList const& otherTransforms = target->GetAurasByType(SPELL_AURA_TRANSFORM);
             if (!otherTransforms.empty())
@@ -2396,6 +2408,13 @@ void Aura::HandleAuraTransform(bool apply, bool Real)
                 if (info.first)
                     target->SetDisplayId(info.first);
             }
+        }
+
+        CreatureInfo const * ci = ObjectMgr::GetCreatureTemplate(m_modifier.m_miscvalue);
+
+        if (ci) // undo scaling when aura is removed
+        {
+            mod_x = ci->scale;
         }
     }
     target->ApplyPercentModFloatValue(OBJECT_FIELD_SCALE_X, (mod_x -1)*100, apply);
