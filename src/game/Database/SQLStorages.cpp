@@ -55,3 +55,6 @@ SQLStorage sConditionStorage(ConditionsSrcFmt, ConditionsDstFmt, "condition_entr
 SQLStorage sAreaStorage(AreaEntryfmt, "entry", "area_template");
 
 SQLHashStorage sGOStorage(GameObjectInfosrcfmt, GameObjectInfodstfmt, "entry", "gameobject_template");
+
+// Map certain quests to their quest start items. quest_id->item_id
+std::unordered_map<uint32, uint32> sQuestStartItems;

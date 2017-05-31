@@ -5477,7 +5477,7 @@ void Player::SetSkill(uint16 id, uint16 currVal, uint16 maxVal, uint16 step /*=0
                             if (GetQuestSlotQuestId(slot) == itr->first)
                             {
                                 SetQuestSlot(slot, 0);
-                                TakeQuestSourceItem(itr->first, false);
+                                TakeOrReplaceQuestStartItems(itr->first, false, false);
                                 break;
                             }
                         }
@@ -6042,7 +6042,7 @@ int32 Player::CalculateReputationGain(ReputationSource source, int32 rep, int32 
         percent *= repRate;
     }
 
-    return int32(sWorld.getConfig(CONFIG_FLOAT_RATE_REPUTATION_GAIN) * rep * percent / 100.0f); 
+    return int32(sWorld.getConfig(CONFIG_FLOAT_RATE_REPUTATION_GAIN) * rep * percent / 100.0f);
 }
 
 //Calculates how many reputation points player gains in victim's enemy factions
@@ -9743,9 +9743,9 @@ InventoryResult Player::CanUseItem(ItemPrototype const *pProto, bool not_loading
         if (pProto->RequiredSpell != 0 && !HasSpell(pProto->RequiredSpell))
             return EQUIP_ERR_NO_REQUIRED_PROFICIENCY;
 
-        
+
         auto playerRank = m_honorMgr.GetHighestRank().rank;
-        
+
         if (sWorld.getConfig(CONFIG_BOOL_ACCURATE_PVP_EQUIP_REQUIREMENTS)
             && sWorld.GetWowPatch() < WOW_PATCH_106)
         {
@@ -13071,35 +13071,67 @@ void Player::GiveQuestSourceItemIfNeed(Quest const *pQuest)
 }
 
 
-bool Player::TakeQuestSourceItem(uint32 quest_id, bool msg)
+bool Player::TakeOrReplaceQuestStartItems(uint32 quest_id, bool msg, bool giveQuestStartItem)
 {
     Quest const* qInfo = sObjectMgr.GetQuestTemplate(quest_id);
+
     if (qInfo)
     {
-        uint32 srcitem = qInfo->GetSrcItemId();
-        if (srcitem > 0)
+        uint32 srcItemId = qInfo->GetSrcItemId();
+
+        if (srcItemId > 0)
         {
             uint32 count = qInfo->GetSrcItemCount();
+
             if (count <= 0)
                 count = 1;
 
-            if (ItemPrototype const* pItem = sObjectMgr.GetItemPrototype(srcitem))
-                if (pItem->StartQuest == quest_id)
-                    return true;
 
-            // exist one case when destroy source quest item not possible:
-            // non un-equippable item (equipped non-empty bag, for example)
-            InventoryResult res = CanUnequipItems(srcitem, count);
-            if (res != EQUIP_ERR_OK)
+            if (ItemPrototype const* pItem = sObjectMgr.GetItemPrototype(srcItemId))
             {
-                if (msg)
-                    SendEquipError(res, NULL, NULL, srcitem);
-                return false;
+
+                if (giveQuestStartItem && quest_id == pItem->StartQuest)
+                {
+                    // Start item and item given at quest start identical. Just leave it.
+                    return true;
+                }
+                else
+                {
+                    // Can't destroy items in certain cases.
+                    InventoryResult res = CanUnequipItems(srcItemId, count);
+
+                    if (res != EQUIP_ERR_OK)
+                    {
+                        if (msg)
+                            SendEquipError(res, NULL, NULL, srcItemId);
+
+                        return false;
+                    }
+
+                    // Additional check to prevent possible unlimited gold
+                    if (HasItemCount(srcItemId, count, false))
+                    {
+                        // Start- and given item not the same, destroy or replace it.
+                        DestroyItemCount(srcItemId, count, true, true);
+
+                        if (giveQuestStartItem)
+                        {
+                            // Check if quest start item is available
+                            auto qItemIterator = sQuestStartItems.find(quest_id);
+
+                            // If start item found, add to inventory
+                            if (qItemIterator != sQuestStartItems.end())
+                                AddItem(qItemIterator->second, count);
+
+                        }
+                    }
+
+                }
             }
 
-            DestroyItemCount(srcitem, count, true, true);
         }
     }
+
     return true;
 }
 
@@ -19733,7 +19765,7 @@ bool Player::ChangeQuestsForRace(uint8 oldRace, uint8 newRace)
                         RemoveTimedQuest(removeQuestId);
                     SetQuestSlotState(log_slot, QUEST_STATUS_NONE);
                     SetQuestSlot(log_slot, 0);
-                    TakeQuestSourceItem(removeQuestId, true);
+                    TakeOrReplaceQuestStartItems(removeQuestId, true, false);
                     // Et prendre la nouvelle
                     if (!CanAddQuest(pNewQuest, true))
                     {
@@ -19788,7 +19820,8 @@ bool Player::ChangeQuestsForRace(uint8 oldRace, uint8 newRace)
         {
             if (pQuest->HasSpecialFlag(QUEST_SPECIAL_FLAG_TIMED))
                 RemoveTimedQuest(itr->first);
-            TakeQuestSourceItem(itr->first, true);
+
+            TakeOrReplaceQuestStartItems(itr->first, true, false);
         }
         itr->second.uState = QUEST_DELETED;
         CHANGERACE_LOG("Suppression de la quete %u", quest_id);
