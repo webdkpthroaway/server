@@ -39,5 +39,7 @@ extern SQLStorage sAreaStorage;
 
 extern SQLHashStorage sGOStorage;
 
+// Map certain quests to their quest start items. quest_id->item_id
+extern std::unordered_map<uint32, uint32> sQuestStartItems;
 
 #endif
