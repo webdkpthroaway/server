@@ -13109,11 +13109,12 @@ bool Player::TakeOrReplaceQuestStartItems(uint32 quest_id, bool msg, bool giveQu
                     }
 
                     // Additional check to prevent possible unlimited gold
-                    if (HasItemCount(srcItemId, count, false))
+                    if (HasItemCount(srcItemId, count, true))
                     {
-                        // Start- and given item not the same, destroy or replace it.
+                        // Start- and given item not the same, destroy it.
                         DestroyItemCount(srcItemId, count, true, true);
-
+                        
+                        // Replace item, if requested
                         if (giveQuestStartItem)
                         {
                             // Check if quest start item is available
