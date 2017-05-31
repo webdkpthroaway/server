@@ -2165,12 +2165,11 @@ void ObjectMgr::LoadItemPrototypes()
         }
 
 
-        if (proto->StartQuest >= 0)
+        if (proto->StartQuest > 0)
         // Item starts a quest, insert it into the quest->startItem map
         {
             if (sQuestStartItems.find(proto->StartQuest) == sQuestStartItems.end())
                 sQuestStartItems.insert( std::pair<uint32, uint32>(proto->StartQuest, proto->ItemId) );
-
             else
                 sLog.outErrorDb("Item #%u also starts quest #%u.", i, proto->StartQuest);
         }
